@@ -1,0 +1,44 @@
+version: '3'
+
+services:
+  rabbitmq:
+    container_name: rabbitmq
+    image: rabbitmq:management
+    hostname: rabbitmq
+    # ports:
+    #   - '5672:5672'
+    #   - '15672:15672'
+    volumes:
+      - ./rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - amqp_network
+
+  amqp_reverse_proxy:
+    container_name: amqp_reverse_proxy
+    build:
+      context: "./amqp_reverse_proxy"
+      dockerfile: Dockerfile
+    command: >
+      bash -c "source /etc/apache2/envvars && exec /usr/sbin/apachectl -D FOREGROUND"
+    ports:
+      - 25672:5672
+    networks:
+      - amqp_network
+
+  ha_proxy:
+    container_name: ha_proxy
+    build:
+      context: "./ha_proxy"
+      dockerfile: Dockerfile
+    ports:
+      - 35672:5672
+    networks:
+      - amqp_network
+
+volumes:
+  rabbitmq-data:
+
+
+networks:
+  amqp_network:
+    driver: bridge
